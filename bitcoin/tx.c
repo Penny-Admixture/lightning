@@ -2,6 +2,7 @@
 #include <bitcoin/block.h>
 #include <bitcoin/pullpush.h>
 #include <bitcoin/tx.h>
+#include <ccan/time/time.h>
 #include <ccan/cast/cast.h>
 #include <ccan/crypto/sha256/sha256.h>
 #include <ccan/endian/endian.h>
@@ -283,8 +284,7 @@ struct bitcoin_tx *bitcoin_tx(const tal_t *ctx,
 {
 	struct bitcoin_tx *tx = tal(ctx, struct bitcoin_tx);
 	assert(chainparams);
-
-	wally_tx_init_alloc(WALLY_TX_VERSION_2, 0, input_count, output_count,
+	wally_tx_init_alloc(WALLY_TX_VERSION_2, time_now().ts.tv_sec, 0, input_count, output_count,
 			    &tx->wtx);
 	tal_add_destructor(tx, bitcoin_tx_destroy);
 

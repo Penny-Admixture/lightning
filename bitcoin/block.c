@@ -33,9 +33,11 @@ bitcoin_block_from_hex(const tal_t *ctx, const struct chainparams *chainparams,
 		b->tx[i] = pull_bitcoin_tx(b->tx, &p, &len);
 		b->tx[i]->chainparams = chainparams;
 	}
+    /* pull size of signature */
+    num = pull_varint(&p, &len);
 
 	/* We should end up not overrunning, nor have extra */
-	if (!p || len)
+	if (!p || len>num)
 		return tal_free(b);
 
 	tal_free(linear_tx);
