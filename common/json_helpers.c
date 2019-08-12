@@ -9,25 +9,24 @@ bool json_to_bitcoin_amount(const char *buffer, const jsmntok_t *tok,
 			    uint64_t *satoshi)
 {
 	char *end;
+	char zeros[]="000000";
 	unsigned long btc, sat;
 
 	btc = strtoul(buffer + tok->start, &end, 10);
 	if (btc == ULONG_MAX && errno == ERANGE)
 		return false;
 	if (end != buffer + tok->end) {
-		/* Expect always 8 decimal places. */
-		if (*end != '.') // || buffer + tok->end - end != 9)
+		if (*end != '.')
 			return false;
-		sat = strtoul(end+1, &end, 10);
+		strncpy(zeros, end+1, tok->end-(end+1-buffer));
+		sat = strtoul(zeros, &end, 10);
 		if (sat == ULONG_MAX && errno == ERANGE)
-			return false;
-		if (end != buffer + tok->end)
 			return false;
 	} else
 		sat = 0;
 
-	*satoshi = btc * (uint64_t)100000000 + sat;
-	if (*satoshi != btc * (uint64_t)100000000 + sat)
+	*satoshi = btc * (uint64_t)1000000 + sat;
+	if (*satoshi != btc * (uint64_t)1000000 + sat)
 		return false;
 
 	return true;
