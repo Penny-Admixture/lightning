@@ -703,8 +703,11 @@ send_payment(struct lightningd *ld,
 		 type_to_string(tmpctx, struct amount_msat, &route[0].amount),
 		 n_hops, type_to_string(tmpctx, struct amount_msat, &msat));
 
+	/* we have to set timestamp now, otherwise htlc won't happen */
+	u32 timestamp = time_now().ts.tv_sec;
+
 	failcode = send_htlc_out(channel, route[0].amount,
-				 base_expiry + route[0].delay,
+				 base_expiry + route[0].delay, timestamp,
 				 rhash, onion, NULL, &hout);
 	if (failcode) {
 		fail = immediate_routing_failure(cmd, ld,
@@ -739,7 +742,7 @@ send_payment(struct lightningd *ld,
 	payment->status = PAYMENT_PENDING;
 	payment->msatoshi = msat;
 	payment->msatoshi_sent = route[0].amount;
-	payment->timestamp = time_now().ts.tv_sec;
+	payment->timestamp = timestamp;
 	payment->payment_preimage = NULL;
 	payment->path_secrets = tal_steal(payment, path_secrets);
 	payment->route_nodes = tal_steal(payment, ids);

@@ -9,6 +9,7 @@
 struct htlc_stub {
 	enum side owner;
 	u32 cltv_expiry;
+	u32 timestamp;
 	u64 id;
 	struct ripemd160 ripemd;
 };

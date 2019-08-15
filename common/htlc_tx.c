@@ -16,6 +16,7 @@ static struct bitcoin_tx *htlc_tx(const tal_t *ctx,
 				  u32 locktime)
 {
 	struct bitcoin_tx *tx = bitcoin_tx(ctx, chainparams, 1, 1);
+
 	u8 *wscript;
 	struct amount_sat amount;
 

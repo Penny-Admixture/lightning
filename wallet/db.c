@@ -392,6 +392,7 @@ static struct migration dbmigrations[] = {
 	 * in the list view anyway, e.g., show all close and htlc transactions
 	 * as a single bundle. */
 	{ "ALTER TABLE transactions ADD channel_id INTEGER;", NULL},
+	{ "ALTER TABLE channel_htlcs ADD timestamp INTEGER", NULL},
 };
 
 /* Leak tracking. */

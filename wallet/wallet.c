@@ -1404,8 +1404,9 @@ void wallet_htlc_save_in(struct wallet *wallet,
 		" hstate,"
 		" shared_secret,"
 		" routing_onion,"
+		" timestamp,"
 		" received_time) VALUES "
-		"(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);");
+		"(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);");
 
 	sqlite3_bind_int64(stmt, 1, chan->dbid);
 	sqlite3_bind_int64(stmt, 2, in->key.id);
@@ -1429,7 +1430,8 @@ void wallet_htlc_save_in(struct wallet *wallet,
 	sqlite3_bind_blob(stmt, 10, &in->onion_routing_packet,
 			  sizeof(in->onion_routing_packet), SQLITE_TRANSIENT);
 
-	sqlite3_bind_timeabs(stmt, 11, in->received_time);
+	sqlite3_bind_int(stmt, 11, in->timestamp);
+	sqlite3_bind_timeabs(stmt, 12, in->received_time);
 
 	db_exec_prepared(wallet->db, stmt);
 	in->dbid = sqlite3_last_insert_rowid(wallet->db->sql);
@@ -1458,7 +1460,8 @@ void wallet_htlc_save_out(struct wallet *wallet,
 	    " payment_hash,"
 	    " payment_key,"
 	    " hstate,"
-	    " routing_onion) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);");
+	    " timestamp,"
+	    " routing_onion) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);");
 
 	sqlite3_bind_int64(stmt, 1, chan->dbid);
 	sqlite3_bind_int64(stmt, 2, out->key.id);
@@ -1476,8 +1479,9 @@ void wallet_htlc_save_out(struct wallet *wallet,
 	else
 		sqlite3_bind_null(stmt, 8);
 	sqlite3_bind_int(stmt, 9, out->hstate);
+    sqlite3_bind_int(stmt, 10, out->timestamp);
 
-	sqlite3_bind_blob(stmt, 10, &out->onion_routing_packet,
+	sqlite3_bind_blob(stmt, 11, &out->onion_routing_packet,
 			  sizeof(out->onion_routing_packet), SQLITE_TRANSIENT);
 
 	db_exec_prepared(wallet->db, stmt);
@@ -1524,7 +1528,7 @@ void wallet_htlc_update(struct wallet *wallet, const u64 htlc_dbid,
 	"id, channel_htlc_id, msatoshi, cltv_expiry, hstate, "	\
 	"payment_hash, payment_key, routing_onion, "		\
 	"failuremsg, malformed_onion,"				\
-	"origin_htlc, shared_secret, received_time"
+	"origin_htlc, shared_secret, timestamp, received_time"
 
 static bool wallet_stmt2htlc_in(struct channel *channel,
 				sqlite3_stmt *stmt, struct htlc_in *in)
@@ -1566,7 +1570,8 @@ static bool wallet_stmt2htlc_in(struct channel *channel,
 #endif
 	}
 
-	in->received_time = sqlite3_column_timeabs(stmt, 12);
+	in->timestamp = sqlite3_column_int(stmt, 12);
+	in->received_time = sqlite3_column_timeabs(stmt, 13);
 
 	return ok;
 }
@@ -1605,6 +1610,7 @@ static bool wallet_stmt2htlc_out(struct channel *channel,
 		out->am_origin = true;
 	}
 
+	out->timestamp = sqlite3_column_int(stmt, 12);
 	/* Need to defer wiring until we can look up all incoming
 	 * htlcs, will wire using origin_htlc_id */
 	out->in = NULL;
@@ -1779,8 +1785,8 @@ struct htlc_stub *wallet_htlc_stubs(const tal_t *ctx, struct wallet *wallet,
 	struct htlc_stub *stubs;
 	struct sha256 payment_hash;
 	sqlite3_stmt *stmt = db_select_prepare(wallet->db,
-		"channel_id, direction, cltv_expiry, channel_htlc_id, payment_hash "
-		"FROM channel_htlcs WHERE channel_id = ?;");
+		"channel_id, direction, cltv_expiry, channel_htlc_id, payment_hash, "
+		"timestamp FROM channel_htlcs WHERE channel_id = ?;");
 
 	sqlite3_bind_int64(stmt, 1, chan->dbid);
 
@@ -1798,6 +1804,8 @@ struct htlc_stub *wallet_htlc_stubs(const tal_t *ctx, struct wallet *wallet,
 
 		sqlite3_column_sha256(stmt, 4, &payment_hash);
 		ripemd160(&stub.ripemd, payment_hash.u.u8, sizeof(payment_hash.u));
+
+		stub.timestamp = sqlite3_column_int(stmt, 5);
 		tal_arr_expand(&stubs, stub);
 	}
 	return stubs;

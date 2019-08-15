@@ -17,6 +17,8 @@ struct htlc {
 	struct amount_msat amount;
 	/* When the HTLC can no longer be redeemed. */
 	struct abs_locktime expiry;
+	/* Timestamp when HTLC was created. */
+	u32 timestamp;
 	/* The hash of the preimage which can redeem this HTLC */
 	struct sha256 rhash;
 	/* The preimage which hashes to rhash (if known) */

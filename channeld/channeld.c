@@ -626,21 +626,30 @@ static void handle_peer_add_htlc(struct peer *peer, const u8 *msg)
 	u64 id;
 	struct amount_msat amount;
 	u32 cltv_expiry;
+	u32 timestamp;
 	struct sha256 payment_hash;
 	u8 onion_routing_packet[TOTAL_PACKET_SIZE];
 	enum channel_add_err add_err;
 	struct htlc *htlc;
 
 	if (!fromwire_update_add_htlc(msg, &channel_id, &id, &amount,
-				      &payment_hash, &cltv_expiry,
+				      &payment_hash, &cltv_expiry, &timestamp,
 				      onion_routing_packet))
 		peer_failed(peer->pps,
 			    &peer->channel_id,
 			    "Bad peer_add_htlc %s", tal_hex(msg, msg));
 
 	add_err = channel_add_htlc(peer->channel, REMOTE, id, amount,
-				   cltv_expiry, &payment_hash,
+				   cltv_expiry, timestamp, &payment_hash,
 				   onion_routing_packet, &htlc, NULL);
+
+	status_trace("Peer adding HTLC %"PRIu64" amount=%s cltv=%u timestamp=%u gave %s",
+				   id,
+				   type_to_string(tmpctx, struct amount_msat, &amount),
+				   cltv_expiry,
+				   timestamp,
+				   channel_add_err_name(add_err));
+
 	if (add_err != CHANNEL_ERR_ADD_OK)
 		peer_failed(peer->pps,
 			    &peer->channel_id,
@@ -1303,6 +1312,7 @@ static u8 *got_commitsig_msg(const tal_t *ctx,
 			a.amount = htlc->amount;
 			a.payment_hash = htlc->rhash;
 			a.cltv_expiry = abs_locktime_to_blocks(&htlc->expiry);
+			a.timestamp = htlc->timestamp;
 			memcpy(a.onion_routing_packet,
 			       htlc->routing,
 			       sizeof(a.onion_routing_packet));
@@ -1979,6 +1989,7 @@ static void resend_commitment(struct peer *peer, const struct changed_htlc *last
 							 &h->rhash,
 							 abs_locktime_to_blocks(
 								 &h->expiry),
+							 h->timestamp,
 							 h->routing);
 			sync_crypto_write(peer->pps, take(msg));
 		} else if (h->state == SENT_REMOVE_COMMIT) {
@@ -2533,6 +2544,7 @@ static void handle_offer_htlc(struct peer *peer, const u8 *inmsg)
 {
 	u8 *msg;
 	u32 cltv_expiry;
+	u32 timestamp;
 	struct amount_msat amount;
 	struct sha256 payment_hash;
 	u8 onion_routing_packet[TOTAL_PACKET_SIZE];
@@ -2547,17 +2559,18 @@ static void handle_offer_htlc(struct peer *peer, const u8 *inmsg)
 			      "funding not locked for offer_htlc");
 
 	if (!fromwire_channel_offer_htlc(inmsg, &amount,
-					 &cltv_expiry, &payment_hash,
+					 &cltv_expiry, &timestamp, &payment_hash,
 					 onion_routing_packet))
 		master_badmsg(WIRE_CHANNEL_OFFER_HTLC, inmsg);
 
 	e = channel_add_htlc(peer->channel, LOCAL, peer->htlc_id,
-			     amount, cltv_expiry, &payment_hash,
+			     amount, cltv_expiry, timestamp, &payment_hash,
 			     onion_routing_packet, NULL, &htlc_fee);
-	status_trace("Adding HTLC %"PRIu64" amount=%s cltv=%u gave %s",
+	status_trace("Adding HTLC %"PRIu64" amount=%s cltv=%u timestamp=%u gave %s",
 		     peer->htlc_id,
 		     type_to_string(tmpctx, struct amount_msat, &amount),
 		     cltv_expiry,
+		     timestamp,
 		     channel_add_err_name(e));
 
 	switch (e) {
@@ -2565,7 +2578,7 @@ static void handle_offer_htlc(struct peer *peer, const u8 *inmsg)
 		/* Tell the peer. */
 		msg = towire_update_add_htlc(NULL, &peer->channel_id,
 					     peer->htlc_id, amount,
-					     &payment_hash, cltv_expiry,
+					     &payment_hash, cltv_expiry, timestamp,
 					     onion_routing_packet);
 		sync_crypto_write(peer->pps, take(msg));
 		start_commit_timer(peer);
