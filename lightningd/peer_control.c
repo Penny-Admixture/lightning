@@ -484,6 +484,7 @@ static void json_add_htlcs(struct lightningd *ld,
 					    "msatoshi", "amount_msat");
 		json_add_u64(response, "expiry", hin->cltv_expiry);
 		json_add_sha256(response, "payment_hash", &hin->payment_hash);
+		json_add_u64(response, "timestamp", hin->timestamp);
 		json_add_string(response, "state",
 				htlc_state_name(hin->hstate));
 		if (htlc_is_trimmed(REMOTE, hin->msat, local_feerate,
@@ -505,6 +506,7 @@ static void json_add_htlcs(struct lightningd *ld,
 					    "msatoshi", "amount_msat");
 		json_add_u64(response, "expiry", hout->cltv_expiry);
 		json_add_sha256(response, "payment_hash", &hout->payment_hash);
+		json_add_u64(response, "timestamp", hout->timestamp);
 		json_add_string(response, "state",
 				htlc_state_name(hout->hstate));
 		if (htlc_is_trimmed(LOCAL, hout->msat, local_feerate,

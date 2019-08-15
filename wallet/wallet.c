@@ -1609,8 +1609,9 @@ void wallet_htlc_save_in(struct wallet *wallet,
 				 " hstate,"
 				 " shared_secret,"
 				 " routing_onion,"
+				 " timestamp,"
 				 " received_time) VALUES "
-				 "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);"));
+				 "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);"));
 
 	db_bind_u64(stmt, 0, chan->dbid);
 	db_bind_u64(stmt, 1, in->key.id);
@@ -1633,7 +1634,8 @@ void wallet_htlc_save_in(struct wallet *wallet,
 	db_bind_blob(stmt, 9, in->onion_routing_packet,
 		     sizeof(in->onion_routing_packet));
 
-	db_bind_timeabs(stmt, 10, in->received_time);
+	db_bind_int(stmt, 10, in->timestamp);
+	db_bind_timeabs(stmt, 11, in->received_time);
 
 	db_exec_prepared_v2(stmt);
 	in->dbid = db_last_insert_id_v2(take(stmt));
@@ -1662,7 +1664,8 @@ void wallet_htlc_save_out(struct wallet *wallet,
 		" payment_hash,"
 		" payment_key,"
 		" hstate,"
-		" routing_onion) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);"));
+		" timestamp,"
+		" routing_onion) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);"));
 
 	db_bind_u64(stmt, 0, chan->dbid);
 	db_bind_u64(stmt, 1, out->key.id);
@@ -1680,8 +1683,9 @@ void wallet_htlc_save_out(struct wallet *wallet,
 	else
 		db_bind_null(stmt, 7);
 	db_bind_int(stmt, 8, out->hstate);
+	db_bind_int(stmt, 9, out->timestamp);
 
-	db_bind_blob(stmt, 9, out->onion_routing_packet,
+	db_bind_blob(stmt, 10, out->onion_routing_packet,
 		     sizeof(out->onion_routing_packet));
 
 	db_exec_prepared_v2(stmt);
@@ -1761,7 +1765,8 @@ static bool wallet_stmt2htlc_in(struct channel *channel,
 #endif
 	}
 
-	in->received_time = db_column_timeabs(stmt, 12);
+	in->timestamp = db_column_int(stmt, 12);
+	in->received_time = db_column_timeabs(stmt, 13);
 
 	return ok;
 }
@@ -1800,6 +1805,7 @@ static bool wallet_stmt2htlc_out(struct channel *channel,
 		out->am_origin = true;
 	}
 
+	out->timestamp = db_column_int(stmt, 11);
 	/* Need to defer wiring until we can look up all incoming
 	 * htlcs, will wire using origin_htlc_id */
 	out->in = NULL;
@@ -2014,7 +2020,7 @@ struct htlc_stub *wallet_htlc_stubs(const tal_t *ctx, struct wallet *wallet,
 
 	stmt = db_prepare_v2(wallet->db,
 			     SQL("SELECT channel_id, direction, cltv_expiry, "
-				 "channel_htlc_id, payment_hash "
+				 "channel_htlc_id, payment_hash, timestamp "
 				 "FROM channel_htlcs WHERE channel_id = ?;"));
 
 	db_bind_u64(stmt, 0, chan->dbid);
@@ -2034,6 +2040,8 @@ struct htlc_stub *wallet_htlc_stubs(const tal_t *ctx, struct wallet *wallet,
 
 		db_column_sha256(stmt, 4, &payment_hash);
 		ripemd160(&stub.ripemd, payment_hash.u.u8, sizeof(payment_hash.u));
+
+		stub.timestamp = db_column_int(stmt, 5);
 		tal_arr_expand(&stubs, stub);
 	}
 	tal_free(stmt);

@@ -26,6 +26,7 @@ struct htlc_in {
 	struct htlc_key key;
 	struct amount_msat msat;
 	u32 cltv_expiry;
+	u32 timestamp;
 	struct sha256 payment_hash;
 
 	enum htlc_state hstate;
@@ -62,6 +63,7 @@ struct htlc_out {
 	struct htlc_key key;
 	struct amount_msat msat;
 	u32 cltv_expiry;
+	u32 timestamp;
 	struct sha256 payment_hash;
 
 	enum htlc_state hstate;
@@ -128,6 +130,7 @@ struct htlc_out *find_htlc_out(const struct htlc_out_map *map,
 struct htlc_in *new_htlc_in(const tal_t *ctx,
 			    struct channel *channel, u64 id,
 			    struct amount_msat msat, u32 cltv_expiry,
+			    u32 timestamp,
 			    const struct sha256 *payment_hash,
 			    const struct secret *shared_secret TAKES,
 			    const u8 *onion_routing_packet);
@@ -137,6 +140,7 @@ struct htlc_out *new_htlc_out(const tal_t *ctx,
 			      struct channel *channel,
 			      struct amount_msat msat,
 			      u32 cltv_expiry,
+			      u32 timestamp,
 			      const struct sha256 *payment_hash,
 			      const u8 *onion_routing_packet,
 			      bool am_origin,

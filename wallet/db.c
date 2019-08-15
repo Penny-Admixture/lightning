@@ -477,6 +477,8 @@ static struct migration dbmigrations[] = {
 	 ");"), NULL},
     {SQL("ALTER TABLE channels ADD shutdown_scriptpubkey_local BLOB;"),
 	 NULL},
+    /* add timestamp to htlc */
+    {SQL("ALTER TABLE channel_htlcs ADD timestamp INTEGER"), NULL},
 };
 
 /* Leak tracking. */

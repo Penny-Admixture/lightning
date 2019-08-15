@@ -93,6 +93,7 @@ u32 actual_feerate(const struct channel *channel,
  * @id: unique HTLC id.
  * @amount: amount in millisatoshi.
  * @cltv_expiry: block number when HTLC can no longer be redeemed.
+ * @timestamp: timestamp of HTLC creation.
  * @payment_hash: hash whose preimage can redeem HTLC.
  * @routing: routing information (copied)
  * @htlcp: optional pointer for resulting htlc: filled in if and only if CHANNEL_ERR_NONE.
@@ -106,6 +107,7 @@ enum channel_add_err channel_add_htlc(struct channel *channel,
 				      u64 id,
 				      struct amount_msat msatoshi,
 				      u32 cltv_expiry,
+				      u32 timestamp,
 				      const struct sha256 *payment_hash,
 				      const u8 routing[TOTAL_PACKET_SIZE],
 				      struct htlc **htlcp,

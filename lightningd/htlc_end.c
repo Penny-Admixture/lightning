@@ -110,6 +110,7 @@ struct htlc_in *htlc_in_check(const struct htlc_in *hin, const char *abortstr)
 struct htlc_in *new_htlc_in(const tal_t *ctx,
 			    struct channel *channel, u64 id,
 			    struct amount_msat msat, u32 cltv_expiry,
+			    u32 timestamp,
 			    const struct sha256 *payment_hash,
 			    const struct secret *shared_secret TAKES,
 			    const u8 *onion_routing_packet)
@@ -121,6 +122,7 @@ struct htlc_in *new_htlc_in(const tal_t *ctx,
 	hin->key.id = id;
 	hin->msat = msat;
 	hin->cltv_expiry = cltv_expiry;
+	hin->timestamp = timestamp;
 	hin->payment_hash = *payment_hash;
 	if (shared_secret)
 		hin->shared_secret = tal_dup(hin, struct secret, shared_secret);
@@ -247,6 +249,7 @@ struct htlc_out *new_htlc_out(const tal_t *ctx,
 			      struct channel *channel,
 			      struct amount_msat msat,
 			      u32 cltv_expiry,
+			      u32 timestamp,
 			      const struct sha256 *payment_hash,
 			      const u8 *onion_routing_packet,
 			      bool am_origin,
@@ -261,6 +264,7 @@ struct htlc_out *new_htlc_out(const tal_t *ctx,
 	hout->key.id = HTLC_INVALID_ID;
 	hout->msat = msat;
 	hout->cltv_expiry = cltv_expiry;
+	hout->timestamp = timestamp;
 	hout->payment_hash = *payment_hash;
 	memcpy(hout->onion_routing_packet, onion_routing_packet,
 	       sizeof(hout->onion_routing_packet));

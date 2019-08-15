@@ -430,7 +430,8 @@ static void htlc_offer_timeout(struct channel *channel)
 }
 
 enum onion_type send_htlc_out(struct channel *out,
-			      struct amount_msat amount, u32 cltv,
+			      struct amount_msat amount, u32 cltv_expiry,
+			      u32 timestamp,
 			      const struct sha256 *payment_hash,
 			      const u8 *onion_routing_packet,
 			      struct htlc_in *in,
@@ -458,7 +459,7 @@ enum onion_type send_htlc_out(struct channel *out,
 	}
 
 	/* Make peer's daemon own it, catch if it dies. */
-	hout = new_htlc_out(out->owner, out, amount, cltv,
+	hout = new_htlc_out(out->owner, out, amount, cltv_expiry, timestamp,
 			    payment_hash, onion_routing_packet, in == NULL, in);
 	tal_add_destructor(hout, destroy_hout_subd_died);
 
@@ -468,7 +469,7 @@ enum onion_type send_htlc_out(struct channel *out,
 						 out, time_from_sec(30),
 						 htlc_offer_timeout,
 						 out);
-	msg = towire_channel_offer_htlc(out, amount, cltv, payment_hash,
+	msg = towire_channel_offer_htlc(out, amount, cltv_expiry, timestamp, payment_hash,
 					onion_routing_packet);
 	subd_req(out->peer->ld, out->owner, take(msg), -1, 0, rcvd_htlc_reply, hout);
 
@@ -478,7 +479,7 @@ enum onion_type send_htlc_out(struct channel *out,
 }
 
 static void forward_htlc(struct htlc_in *hin,
-			 u32 cltv_expiry,
+			 u32 cltv_expiry, u32 timestamp,
 			 struct amount_msat amt_to_forward,
 			 u32 outgoing_cltv_value,
 			 const struct node_id *next_hop,
@@ -569,7 +570,7 @@ static void forward_htlc(struct htlc_in *hin,
 
 	hout = tal(tmpctx, struct htlc_out);
 	failcode = send_htlc_out(next, amt_to_forward,
-				 outgoing_cltv_value, &hin->payment_hash,
+				 outgoing_cltv_value, hin->timestamp, &hin->payment_hash,
 				 next_onion, hin, &hout);
 	if (!failcode)
 		return;
@@ -622,7 +623,7 @@ static void channel_resolve_reply(struct subd *gossip, const u8 *msg,
 		return;
 	}
 
-	forward_htlc(gr->hin, gr->hin->cltv_expiry,
+	forward_htlc(gr->hin, gr->hin->cltv_expiry, gr->hin->timestamp,
 		     gr->amt_to_forward, gr->outgoing_cltv_value, peer_id,
 		     gr->next_onion);
 	tal_free(gr);
@@ -1398,7 +1399,7 @@ static bool channel_added_their_htlc(struct channel *channel,
 	/* This stays around even if we fail it immediately: it *is*
 	 * part of the current commitment. */
 	hin = new_htlc_in(channel, channel, added->id, added->amount,
-			  added->cltv_expiry, &added->payment_hash,
+			  added->cltv_expiry, added->timestamp, &added->payment_hash,
 			  shared_secret, added->onion_routing_packet);
 
 	/* Save an incoming htlc to the wallet */

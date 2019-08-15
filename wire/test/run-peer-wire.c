@@ -242,6 +242,7 @@ struct msg_update_add_htlc {
 	u64 id;
 	struct amount_msat amount_msat;
 	u32 expiry;
+	u32 timestamp;
 	struct sha256 payment_hash;
 	u8 onion_routing_packet[TOTAL_PACKET_SIZE];
 };
@@ -718,6 +719,7 @@ static void *towire_struct_update_add_htlc(const tal_t *ctx,
 				      s->amount_msat,
 				      &s->payment_hash,
 				      s->expiry,
+				      s->timestamp,
 				      s->onion_routing_packet);
 }
 
@@ -731,6 +733,7 @@ static struct msg_update_add_htlc *fromwire_struct_update_add_htlc(const tal_t *
 				     &s->amount_msat,
 				     &s->payment_hash,
 				     &s->expiry,
+				     &s->timestamp,
 				     s->onion_routing_packet))
 		return s;
 	return tal_free(s);

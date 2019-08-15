@@ -248,6 +248,12 @@ static void add_htlcs(const struct chainparams *chainparams,
 						       &keyset->self_revocation_key);
 		}
 
+		/* set timestamp in transaction */
+		if (htlc->timestamp)
+			tx->wtx->timestamp = htlc->timestamp;
+		else
+			status_trace("missing timestamp from htlc");
+
 		/* Append to array. */
 		assert(tal_count(*txs) == tal_count(*wscripts));
 
@@ -289,6 +295,11 @@ struct bitcoin_tx **channel_txs(const tal_t *ctx,
 	    channel->config[side].dust_limit, channel->view[side].owed[side],
 	    channel->view[side].owed[!side], committed, htlcmap,
 	    commitment_number ^ channel->commitment_number_obscurer, side);
+
+	if (tal_count(*htlcmap)) {
+		if((*htlcmap)[0])
+			txs[0]->wtx->timestamp = (*htlcmap)[0]->timestamp;
+		}
 
 	*wscripts = tal_arr(ctx, const u8 *, 1);
 	(*wscripts)[0] = bitcoin_redeem_2of2(*wscripts,
@@ -369,6 +380,7 @@ static enum channel_add_err add_htlc(struct channel *channel,
 				     u64 id,
 				     struct amount_msat amount,
 				     u32 cltv_expiry,
+				     u32 timestamp,
 				     const struct sha256 *payment_hash,
 				     const u8 routing[TOTAL_PACKET_SIZE],
 				     struct htlc **htlcp,
@@ -403,6 +415,7 @@ static enum channel_add_err add_htlc(struct channel *channel,
 		return CHANNEL_ERR_INVALID_EXPIRY;
 	}
 
+	htlc->timestamp = timestamp;
 	htlc->rhash = *payment_hash;
 	htlc->fail = NULL;
 	htlc->failcode = 0;
@@ -617,6 +630,7 @@ enum channel_add_err channel_add_htlc(struct channel *channel,
 				      u64 id,
 				      struct amount_msat amount,
 				      u32 cltv_expiry,
+				      u32 timestamp,
 				      const struct sha256 *payment_hash,
 				      const u8 routing[TOTAL_PACKET_SIZE],
 				      struct htlc **htlcp,
@@ -629,7 +643,7 @@ enum channel_add_err channel_add_htlc(struct channel *channel,
 	else
 		state = RCVD_ADD_HTLC;
 
-	return add_htlc(channel, state, id, amount, cltv_expiry,
+	return add_htlc(channel, state, id, amount, cltv_expiry, timestamp,
 			payment_hash, routing, htlcp, true, htlc_fee);
 }
 
@@ -1200,18 +1214,21 @@ bool channel_force_htlcs(struct channel *channel,
 
 		status_debug("Restoring HTLC %zu/%zu:"
 			     " id=%"PRIu64" amount=%s cltv=%u"
+			     " timestamp=%u"
 			     " payment_hash=%s",
 			     i, tal_count(htlcs),
 			     htlcs[i].id,
 			     type_to_string(tmpctx, struct amount_msat,
 					    &htlcs[i].amount),
 			     htlcs[i].cltv_expiry,
+			     htlcs[i].timestamp,
 			     type_to_string(tmpctx, struct sha256,
 					    &htlcs[i].payment_hash));
 
 		e = add_htlc(channel, hstates[i],
 			     htlcs[i].id, htlcs[i].amount,
 			     htlcs[i].cltv_expiry,
+			     htlcs[i].timestamp,
 			     &htlcs[i].payment_hash,
 			     htlcs[i].onion_routing_packet, &htlc, false, NULL);
 		if (e != CHANNEL_ERR_ADD_OK) {

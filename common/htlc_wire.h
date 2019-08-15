@@ -17,6 +17,7 @@ struct added_htlc {
 	struct amount_msat amount;
 	struct sha256 payment_hash;
 	u32 cltv_expiry;
+	u32 timestamp;
 	u8 onion_routing_packet[TOTAL_PACKET_SIZE];
 };
 

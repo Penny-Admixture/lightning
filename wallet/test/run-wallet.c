@@ -575,7 +575,7 @@ u8 *towire_channel_got_commitsig_reply(const tal_t *ctx UNNEEDED)
 u8 *towire_channel_got_revoke_reply(const tal_t *ctx UNNEEDED)
 { fprintf(stderr, "towire_channel_got_revoke_reply called!\n"); abort(); }
 /* Generated stub for towire_channel_offer_htlc */
-u8 *towire_channel_offer_htlc(const tal_t *ctx UNNEEDED, struct amount_msat amount_msat UNNEEDED, u32 cltv_expiry UNNEEDED, const struct sha256 *payment_hash UNNEEDED, const u8 onion_routing_packet[1366])
+u8 *towire_channel_offer_htlc(const tal_t *ctx UNNEEDED, struct amount_msat amount_msat UNNEEDED, u32 cltv_expiry UNNEEDED, u32 timestamp UNNEEDED, const struct sha256 *payment_hash UNNEEDED, const u8 onion_routing_packet[1366])
 { fprintf(stderr, "towire_channel_offer_htlc called!\n"); abort(); }
 /* Generated stub for towire_channel_sending_commitsig_reply */
 u8 *towire_channel_sending_commitsig_reply(const tal_t *ctx UNNEEDED)
