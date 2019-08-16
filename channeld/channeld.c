@@ -986,7 +986,8 @@ done:
 static secp256k1_ecdsa_signature *calc_commitsigs(const tal_t *ctx,
 						  const struct peer *peer,
 						  u64 commit_index,
-						  struct bitcoin_signature *commit_sig)
+						  struct bitcoin_signature *commit_sig,
+						  u32 timestamp)
 {
 	size_t i;
 	struct bitcoin_tx **txs;
@@ -999,6 +1000,11 @@ static secp256k1_ecdsa_signature *calc_commitsigs(const tal_t *ctx,
 	txs = channel_txs(tmpctx, peer->channel->chainparams, &htlc_map,
 			  &wscripts, peer->channel, &peer->remote_per_commit,
 			  commit_index, REMOTE);
+
+	if (timestamp)
+		txs[0]->wtx->timestamp = timestamp;
+	else
+		status_trace("Unable to correct timestamp");
 
 	msg = towire_hsm_sign_remote_commitment_tx(NULL, txs[0],
 						   &peer->channel->funding_pubkey[REMOTE],
@@ -1091,6 +1097,7 @@ static void send_commit(struct peer *peer)
 	const struct htlc **changed_htlcs;
 	struct bitcoin_signature commit_sig;
 	secp256k1_ecdsa_signature *htlc_sigs;
+	u32 timestamp = 0;
 
 #if DEVELOPER
 	/* Hack to suppress all commit sends if dev_disconnect says to */
@@ -1181,8 +1188,12 @@ static void send_commit(struct peer *peer)
 		return;
 	}
 
+	/* correct timestamp for commitsig */
+	if (tal_count(changed_htlcs) && changed_htlcs[0])
+		timestamp = changed_htlcs[0]->timestamp;
+
 	htlc_sigs = calc_commitsigs(tmpctx, peer, peer->next_index[REMOTE],
-				    &commit_sig);
+				    &commit_sig, timestamp);
 
 	status_debug("Telling master we're about to commit...");
 	/* Tell master to save this next commit to database, then wait. */
@@ -1379,6 +1390,7 @@ static void handle_peer_commit_sig(struct peer *peer, const u8 *msg)
 	const struct htlc **htlc_map, **changed_htlcs;
 	const u8 **wscripts;
 	size_t i;
+	u32 timestamp;
 
 	changed_htlcs = tal_arr(msg, const struct htlc *, 0);
 	if (!channel_rcvd_commit(peer->channel, &changed_htlcs)) {
@@ -1430,6 +1442,16 @@ static void handle_peer_commit_sig(struct peer *peer, const u8 *msg)
 				    &peer->channel->basepoints[REMOTE].htlc),
 		     type_to_string(tmpctx, struct pubkey,
 				    &peer->next_local_per_commit));
+
+	for (size_t i = 0; i < tal_count(changed_htlcs); i++)
+		if (timestamp < changed_htlcs[i]->timestamp)
+			timestamp = changed_htlcs[i]->timestamp;
+
+	if (timestamp)
+		txs[0]->wtx->timestamp = timestamp;
+	else
+		status_trace("Unable to correct timestamp");
+
 	/* BOLT #2:
 	 *
 	 * A receiving node:
@@ -1960,6 +1982,7 @@ static void resend_commitment(struct peer *peer, const struct changed_htlc *last
 	struct bitcoin_signature commit_sig;
 	secp256k1_ecdsa_signature *htlc_sigs;
 	u8 *msg;
+	u32 timestamp = 0;
 
 	status_debug("Retransmitting commitment, feerate LOCAL=%u REMOTE=%u",
 		     channel_feerate(peer->channel, LOCAL),
@@ -1990,6 +2013,9 @@ static void resend_commitment(struct peer *peer, const struct changed_htlc *last
 				    "Can't find HTLC %"PRIu64" to resend",
 				    last[i].id);
 
+		if (timestamp < h->timestamp)
+			timestamp = h->timestamp;
+
 		if (h->state == SENT_ADD_COMMIT) {
 			u8 *msg = towire_update_add_htlc(NULL, &peer->channel_id,
 							 h->id, h->amount,
@@ -2013,7 +2039,7 @@ static void resend_commitment(struct peer *peer, const struct changed_htlc *last
 
 	/* Re-send the commitment_signed itself. */
 	htlc_sigs = calc_commitsigs(tmpctx, peer, peer->next_index[REMOTE]-1,
-				    &commit_sig);
+				    &commit_sig, timestamp);
 	msg = towire_commitment_signed(NULL, &peer->channel_id,
 				       &commit_sig.s, htlc_sigs);
 	sync_crypto_write(peer->pps, take(msg));
