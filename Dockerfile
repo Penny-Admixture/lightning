@@ -54,6 +54,22 @@ RUN mkdir /opt/litecoin && cd /opt/litecoin \
     && tar -xzvf litecoin.tar.gz $BD/litecoin-cli --strip-components=1 --exclude=*-qt \
     && rm litecoin.tar.gz
 
+ENV PEERCOIN_VERSION 0.8.3
+ENV PEERCOIN_PGP_KEY 7D0BA931792583697D67A0081D290CA88208A038
+ENV PEERCOIN_URL https://github.com/peercoin/peercoin/releases/download/v${PEERCOIN_VERSION}ppc/peercoin-${PEERCOIN_VERSION}-x86_64-linux-gnu.tar.gz
+ENV PEERCOIN_ASC_URL https://github.com/peercoin/peercoin/releases/download/v${PEERCOIN_VERSION}ppc/peercoin-${PEERCOIN_VERSION}-x86_64-linux-gnu.tar.gz.asc
+
+# install peercoin binaries
+RUN mkdir /opt/peercoin && cd /opt/peercoin \
+    && wget -qO peercoin.tar.gz "$PEERCOIN_URL" \
+    && gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys "$PEERCOIN_PGP_KEY" \
+    && wget -qO peercoin.tar.gz.asc "$PEERCOIN_ASC_URL" \
+    && gpg --verify peercoin.tar.gz.asc \
+    && BD=peercoin-$PEERCOIN_VERSION/bin \
+    && tar -xzvf peercoin.tar.gz $BD/peercoin-cli --strip-components=1 --exclude=*-qt \
+    && rm peercoin.tar.gz
+
+
 ENV LIGHTNINGD_VERSION=master
 
 WORKDIR /opt/lightningd
