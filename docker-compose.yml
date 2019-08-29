@@ -1,0 +1,44 @@
+version: "3"
+services:
+  peercoind:
+    image: peercoin/peercoind:0.8.3
+    container_name: peercoind
+    environment:
+      - RPC_USER=peercoind
+      - RPC_PASSWORD=peercoindrpc
+    command:
+      -testnet
+      -nominting
+    expose:
+      - "9903"
+    ports:
+      - "0.0.0.0:19904:9904"
+    volumes:
+      - "peercoin_datadir:/data"
+
+  clightning_peercoin:
+    image: backpacker/lightningd
+    container_name: lightningd
+    command:
+      - --bitcoin-rpcconnect=peercoind
+      - --bitcoin-rpcport=9904
+      - --bitcoin-rpcuser=peercoind
+      - --bitcoin-rpcpassword=peercoindrpc
+      - --network=peercoin-testnet
+      - --alias=myawesomenode
+      - --log-level=debug
+    environment:
+      EXPOSE_TCP: "true"
+    expose:
+      - "9735"
+    ports:
+      - "0.0.0.0:19735:9735"
+    volumes:
+      - "clightning_peercoin_datadir:/root/.lightning"
+      - "peercoin_datadir:/etc/bitcoin"
+    links:
+      - peercoind
+
+volumes:
+  peercoin_datadir:
+  clightning_peercoin_datadir:
