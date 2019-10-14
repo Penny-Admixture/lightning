@@ -1,7 +1,7 @@
 version: "3"
 services:
   peercoind:
-    image: peercoin/peercoind:0.8.3
+    image: peercoin/peercoind:0.8.4
     container_name: peercoind
     environment:
       - RPC_USER=peercoind
@@ -17,7 +17,7 @@ services:
       - "peercoin_datadir:/data"
 
   clightning_peercoin:
-    image: backpacker/lightningd
+    image: peercoin/lightningd
     container_name: lightningd
     command:
       - --bitcoin-rpcconnect=peercoind
