@@ -1,4 +1,4 @@
-# c-lightning: A specification compliant Lightning Network implementation in C
+# peercoin c-lightning: A specification compliant Lightning Network implementation in C
 
 c-lightning is a lighweight, highly customizable and [standard compliant][std] implementation of the Lightning Network protocol.
 
@@ -16,21 +16,11 @@ c-lightning is a lighweight, highly customizable and [standard compliant][std] i
 
 ## Project Status
 
-[![Build Status][travis-ci]][travis-ci-link]
-[![Pull Requests Welcome][prs]][prs-link]
-[![Irc][IRC]][IRC-link]
-[![Documentation Status](https://readthedocs.org/projects/lightning/badge/?version=docs)][docs]
-
-This implementation has been in production use on the Bitcoin mainnet since early 2018, with the launch of the [Blockstream Store][blockstream-store-blog].
-We recommend getting started by experimenting on `testnet` (or `regtest`), but the implementation is considered stable and can be safely used on mainnet.
-
-Any help testing the implementation, reporting bugs, or helping with outstanding issues is very welcome.
-Don't hesitate to reach out to us on IRC at [#lightning-dev @ freenode.net][irc1], [#c-lightning @ freenode.net][irc2], or on the implementation-specific mailing list [c-lightning@lists.ozlabs.org][ml1], or on the Lightning Network-wide mailing list [lightning-dev@lists.linuxfoundation.org][ml2].
+Based on v0.7.2, minimal peercoin changes are implemented.
 
 ## Getting Started
 
-c-lightning only works on Linux and Mac OS, and requires a locally (or remotely) running `bitcoind` (version 0.16 or above) that is fully caught up with the network you're testing on.
-Pruning (`prune=n` option in `bitcoin.conf`) is partially supported, see [here](#pruning) for more details.
+c-lightning only works on Linux and Mac OS, and requires a locally (or remotely) running `peercoind` (version 0.8 or above) that is fully caught up with the network you're testing on.
 
 ### Installation
 
@@ -41,40 +31,31 @@ There are 4 supported installation options:
  - Using one of the [provided docker images][dockerhub] on the Docker Hub
  - Compiling the source code yourself as described in the [installation documentation](doc/INSTALL.md).
 
-For the impatient here's the gist of it for Ubuntu:
-
-```bash
-sudo apt-get install -y software-properties-common
-sudo add-apt-repository -u ppa:bitcoin/bitcoin
-sudo add-apt-repository -u ppa:lightningnetwork/ppa
-sudo apt-get install bitcoind lightningd
-```
-
 ### Starting `lightningd`
 
 If you want to experiment with `lightningd`, there's a script to set
-up a `bitcoind` regtest test network of two local lightning nodes,
+up a `peercoind` regtest test network of two local lightning nodes,
 which provides a convenient `start_ln` helper:
 
 ```bash
 . contrib/startup_regtest.sh
 ```
 
-To test with real bitcoin,  you will need to have a local `bitcoind` node running:
+To test with real peercoin,  you will need to have a local `peercoind` node running:
 
 ```bash
-bitcoind -daemon -testnet
+peercoind -daemon -testnet
 ```
 
-Wait until `bitcoind` has synchronized with the network.
+Wait until `peercoind` has synchronized with the network.
 
-Make sure that you do not have `walletbroadcast=0` in your `~/.bitcoin/bitcoin.conf`, or you may run into trouble.
+Make sure that you do not have `walletbroadcast=0` in your `~/.peercoin/peercoin.conf`, or you may run into trouble.
 Notice that running `lightningd` against a pruned node may cause some issues if not managed carefully, see [below](#pruning) for more information.
 
 You can start `lightningd` with the following command:
 
 ```bash
-lightningd --network=bitcoin --log-level=debug
+lightningd --network=peercoin --log-level=debug
 ```
 
 This creates a `.lightning/` subdirectory in your home directory: see `man -l doc/lightningd.8`.
@@ -88,7 +69,7 @@ will offer specific information on that command.
 
 Useful commands:
 
-* [newaddr](doc/lightning-newaddr.7.md): get a bitcoin address to deposit funds into your lightning node.
+* [newaddr](doc/lightning-newaddr.7.md): get a peercoin address to deposit funds into your lightning node.
 * [listfunds](doc/lightning-listfunds.7.md): see where your funds are.
 * [connect](doc/lightning-connect.7.md): connect to another lightning node.
 * [fundchannel](doc/lightning-fundchannel.7.md): create a channel to another connected node.
@@ -124,7 +105,7 @@ open a channel:
 lightning-cli newaddr
 
 # Returns a transaction id <txid>
-bitcoin-cli sendtoaddress <address> <amount_in_bitcoins>
+peercoin-cli sendtoaddress <address> <amount_in_peercoins>
 ```
 
 `lightningd` will register the funds once the transaction is confirmed.
@@ -191,24 +172,14 @@ To use a configuration file, create a file named `config` within your lightning 
 
 ## Further information
 
-### Pruning
-
-c-lightning requires JSON-RPC access to a fully synchronized `bitcoind` in order to synchronize with the Bitcoin network.
-Access to ZeroMQ is not required and `bitcoind` does not need to be run with `txindex` like other implementations.
-The lightning daemon will poll `bitcoind` for new blocks that it hasn't processed yet, thus synchronizing itself with `bitcoind`.
-If `bitcoind` prunes a block that c-lightning has not processed yet, e.g., c-lightning was not running for a prolonged period, then `bitcoind` will not be able to serve the missing blocks, hence c-lightning will not be able to synchronize anymore and will be stuck.
-In order to avoid this situation you should be monitoring the gap between c-lightning's blockheight using `lightning-cli getinfo` and `bitcoind`'s blockheight using `bitcoin-cli getblockchaininfo`.
-If the two blockheights drift apart it might be necessary to intervene.
-
 ### Developers
 
 Developers wishing to contribute should start with the developer guide [here](doc/HACKING.md).
 You should also configure with `--enable-developer` to get additional checks and options.
 
-[blockstream-store-blog]: https://blockstream.com/2018/01/16/en-lightning-charge/
 [std]: https://github.com/lightningnetwork/lightning-rfc
-[travis-ci]: https://travis-ci.org/ElementsProject/lightning.svg?branch=master
-[travis-ci-link]: https://travis-ci.org/ElementsProject/lightning
+[travis-ci]: https://travis-ci.org/peercoin/lightning.svg?branch=peercoin
+[travis-ci-link]: https://travis-ci.org/peercoin/lightning
 [prs]: https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat
 [prs-link]: http://makeapullrequest.com
 [IRC]: https://img.shields.io/badge/chat-on%20freenode-brightgreen.svg
@@ -219,7 +190,7 @@ You should also configure with `--enable-developer` to get additional checks and
 [ml2]: https://lists.linuxfoundation.org/mailman/listinfo/lightning-dev
 [docs]: https://lightning.readthedocs.org
 [ppa]: https://launchpad.net/~lightningnetwork/+archive/ubuntu/ppa
-[releases]: https://github.com/ElementsProject/lightning/releases
-[dockerhub]: https://hub.docker.com/r/elementsproject/lightningd/
+[releases]: https://github.com/peercoin/lightning/releases
+[dockerhub]: https://hub.docker.com/r/peercoin/lightningd/
 [jsonrpcspec]: https://www.jsonrpc.org/specification
 [helpme-github]: https://github.com/lightningd/plugins/tree/master/helpme
