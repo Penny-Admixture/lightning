@@ -9,7 +9,7 @@ FROM debian:stretch-slim as downloader
 
 RUN set -ex \
 	&& apt-get update \
-	&& apt-get install -qq --no-install-recommends ca-certificates dirmngr wget
+	&& apt-get install -qq --no-install-recommends ca-certificates dirmngr wget gpg
 
 WORKDIR /opt
 
