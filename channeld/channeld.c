@@ -642,7 +642,7 @@ static void handle_peer_add_htlc(struct peer *peer, const u8 *msg)
 				   cltv_expiry, timestamp, &payment_hash,
 				   onion_routing_packet, &htlc, NULL);
 
-	status_trace("Peer adding HTLC %"PRIu64" amount=%s cltv=%u timestamp=%u gave %s",
+	status_debug("Peer adding HTLC %"PRIu64" amount=%s cltv=%u timestamp=%u gave %s",
 				   id,
 				   type_to_string(tmpctx, struct amount_msat, &amount),
 				   cltv_expiry,
@@ -1004,7 +1004,7 @@ static secp256k1_ecdsa_signature *calc_commitsigs(const tal_t *ctx,
 	if (timestamp)
 		txs[0]->wtx->timestamp = timestamp;
 	else
-		status_trace("Unable to correct timestamp");
+		status_debug("Unable to correct timestamp");
 
 	msg = towire_hsm_sign_remote_commitment_tx(NULL, txs[0],
 						   &peer->channel->funding_pubkey[REMOTE],
@@ -1450,7 +1450,7 @@ static void handle_peer_commit_sig(struct peer *peer, const u8 *msg)
 	if (timestamp)
 		txs[0]->wtx->timestamp = timestamp;
 	else
-		status_trace("Unable to correct timestamp");
+		status_debug("Unable to correct timestamp");
 
 	/* BOLT #2:
 	 *
@@ -2652,7 +2652,7 @@ static void handle_offer_htlc(struct peer *peer, const u8 *inmsg)
 	e = channel_add_htlc(peer->channel, LOCAL, peer->htlc_id,
 			     amount, cltv_expiry, timestamp, &payment_hash,
 			     onion_routing_packet, NULL, &htlc_fee);
-	status_trace("Adding HTLC %"PRIu64" amount=%s cltv=%u timestamp=%u gave %s",
+	status_debug("Adding HTLC %"PRIu64" amount=%s cltv=%u timestamp=%u gave %s",
 		     peer->htlc_id,
 		     type_to_string(tmpctx, struct amount_msat, &amount),
 		     cltv_expiry,

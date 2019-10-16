@@ -252,7 +252,7 @@ static void add_htlcs(const struct chainparams *chainparams,
 		if (htlc->timestamp)
 			tx->wtx->timestamp = htlc->timestamp;
 		else
-			status_trace("missing timestamp from htlc");
+			status_debug("missing timestamp from htlc");
 
 		/* Append to array. */
 		assert(tal_count(*txs) == tal_count(*wscripts));

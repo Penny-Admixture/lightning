@@ -239,8 +239,8 @@ const struct chainparams networks[] = {
      .p2pkh_version = 111,
      .p2sh_version = 196,
      .testnet = true,
+     .is_elements = false,
      .bip32_key_version = {.bip32_pubkey_version = BIP32_VER_TEST_PUBLIC, .bip32_privkey_version = BIP32_VER_TEST_PRIVATE}}
-     .is_elements = false},
 };
 
 const struct chainparams *chainparams_for_network(const char *network_name)
