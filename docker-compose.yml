@@ -1,7 +1,7 @@
 version: "3"
 services:
   peercoind:
-    image: peercoin/peercoind:0.8.4
+    image: peercoin/peercoind:latest
     container_name: peercoind
     environment:
       - RPC_USER=peercoind
@@ -9,6 +9,7 @@ services:
     command:
       -testnet
       -nominting
+      -addnode=explorer.peercoin.net
     expose:
       - "9903"
     ports:
@@ -17,7 +18,7 @@ services:
       - "peercoin_datadir:/data"
 
   clightning_peercoin:
-    image: peercoin/lightningd
+    image: peercoin/lightningd:latest
     container_name: lightningd
     command:
       - --bitcoin-rpcconnect=peercoind
